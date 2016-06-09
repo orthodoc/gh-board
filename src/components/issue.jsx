@@ -76,19 +76,40 @@ let IssueSimple = React.createClass({
     // PR updatedAt is updated when commits are pushed
     const updatedAt = card.getUpdatedAt();
 
-    const user = issue.assignee ? issue.assignee : issue.user;
-    const assignedAvatar = (
-      <Link to={getFilters().toggleUserName(user.login).url()} className='avatar-filter'>
-        <img
-          key='avatar'
-          className='avatar-image'
-          title={'Click to filter on ' + user.login}
-          src={user.avatarUrl}/>
-      </Link>
-    );
+    const user = issue.assignee;
+    let assignedAvatar;
+    if (user) {
+      assignedAvatar = (
+        <Link to={getFilters().toggleUserName(user.login).url()} className='avatar-filter'>
+          <img
+            key='avatar'
+            className='avatar-image'
+            title={'Click to filter on ' + user.login}
+            src={user.avatarUrl}/>
+        </Link>
+      );
+    }
 
     // stop highlighting after 5min
     const isUpdated = Date.now() - Date.parse(updatedAt) < 2 * 60 * 1000;
+
+    let dueAt;
+    if (issueDueAt) {
+      const dueAtClasses = {
+        'issue-due-at': true,
+        'is-overdue': issueDueAt < Date.now(),
+        'is-near': issueDueAt > Date.now() && issueDueAt - Date.now() < 7 * 24 * 60 * 60 * 1000 // set it to be 1 week
+      };
+      dueAt = (
+        <span className={classnames(dueAtClasses)}>
+          <i className='octicon octicon-calendar'/>
+          {' due '}
+          <Time dateTime={issueDueAt}/>
+        </span>
+      );
+    } else {
+      // Click to add due date
+    }
 
     const classes = {
       'issue': true,
@@ -108,12 +129,18 @@ let IssueSimple = React.createClass({
         data-state={issue.state}>
 
         {assignedAvatar}
-        <GithubFlavoredMarkdown
+        <a
           className='issue-title'
-          inline
-          repoOwner={repoOwner}
-          repoName={repoName}
-          text={issue.title}/>
+          target='_blank'
+          href={issue.htmlUrl}>
+          <GithubFlavoredMarkdown
+            className='-issue-title-text'
+            inline
+            repoOwner={repoOwner}
+            repoName={repoName}
+            text={issue.title}/>
+        </a>
+        {dueAt}
         <a
           className='issue-number'
           target='_blank'
@@ -362,6 +389,8 @@ let IssueCard = React.createClass({
           <Time dateTime={issueDueAt}/>
         </span>
       );
+    } else {
+      // Click to add due date
     }
 
     const etherpadHref = getFilters().setRouteName(`p-issue/${repoOwner}/${repoName}/${issue.number}`).url();
